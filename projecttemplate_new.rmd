@@ -1,0 +1,475 @@
+---
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+Hemant Bhambhu
+========================================================
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+
+library(ggplot2)
+library(dplyr)
+library(corrplot)
+library(psych)
+
+```
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+red_wine=read.csv('wineQualityReds.csv')
+```
+
+Information about our dataset-
+This tidy data set contains 1,599 red wines with 11 variables on the chemical 
+properties of the wine. At least 3 wine experts rated the quality of each wine,
+providing a rating between 0 (very bad) and 10 (very excellent).
+Description of attributes:
+
+   1 - fixed acidity: most acids involved with wine or fixed or nonvolatile 
+   (do not evaporate readily)
+
+   2 - volatile acidity: the amount of acetic acid in wine, which at too high
+   of levels can lead to an unpleasant, vinegar taste
+
+   3 - citric acid: found in small quantities, citric acid can add 
+   'freshness' and flavor to wines
+
+   4 - residual sugar: the amount of sugar remaining after fermentation 
+   stops, it's rare to find wines with less than 1 gram/liter and wines 
+   with greater than 45 grams/liter are considered sweet
+
+   5 - chlorides: the amount of salt in the wine
+
+   6 - free sulfur dioxide: the free form of SO2 exists in equilibrium between
+   molecular SO2 (as a dissolved gas) and bisulfite ion; it prevents microbial
+   growth and the oxidation of wine
+
+   7 - total sulfur dioxide: amount of free and bound forms of S02; in low
+   concentrations, SO2 is mostly undetectable in wine, but at free SO2
+   concentrations over 50 ppm, SO2 becomes evident in the nose and taste of wine
+
+   8 - density: the density of water is close to that of water depending
+   on the percent alcohol and sugar content
+
+   9 - pH: describes how acidic or basic a wine is on a scale from 
+   0 (very acidic) to 14 (very basic); most wines are between 3-4 
+   on the pH scale
+
+   10 - sulphates: a wine additive which can contribute to sulfur dioxide
+   gas (S02) levels, wich acts as an antimicrobial and antioxidant
+
+   11 - alcohol: the percent alcohol content of the wine
+
+
+# Univariate Plots Section
+
+
+```{r echo=FALSE, Univariate_Plots}
+
+str(red_wine)
+
+```
+```{r}
+M <- cor(red_wine)
+corrplot(M, method="circle",type = 'lower')
+```
+
+
+
+observation for quality-
+positive correlation - fixed acidity,citric acid, 
+residual sugar,alcohol,sulphates
+
+negative correlation-volatile acidity,chloride,
+free sulphur dioxide, total sulfur dioxide,density,pH
+
+it's highly corelated to alcohol and volatile acidity.
+
+```{r echo=FALSE}
+
+
+multi.hist(select(red_wine,
+            c(fixed.acidity,volatile.acidity,citric.acid,residual.sugar)))
+```
+fixed.acidity has near normal distribution,
+volatile.acidity has near normal distribution,
+citric.acid has near uniform distribution
+residual.sugar is not clear so we draw it again with reduced scale
+
+```{r echo=FALSE , message=FALSE, warning=FALSE}
+ggplot(aes(x=residual.sugar),data = red_wine)+
+  geom_histogram(binwidth=.1)+
+  coord_cartesian(xlim = c(0.8,4))+
+  scale_x_continuous(breaks = seq(0,4,.25))
+```
+yes sugar is also fairly normally distributed.
+
+```{r echo=FALSE}
+summary(select(red_wine,
+            c(fixed.acidity,volatile.acidity,citric.acid,residual.sugar)))
+```
+```{r echo=FALSE}
+red_wine$quality_text=as.factor(cut(as.numeric(red_wine$quality),
+c(2,4,6,8),labels = c('bad','average','good')))
+red_wine$quality_text=as.factor(red_wine$quality_text)
+
+```
+
+```{r echo=FALSE}
+red_wine$residual.sugar_content=
+  as.factor(cut(as.numeric(red_wine$residual.sugar),
+c(0,1.9,2.6,16),labels = c('low','average','high')))
+red_wine$residual.sugar_content=as.factor(red_wine$residual.sugar_content)
+
+```
+
+```{r echo=FALSE}
+red_wine$fixed.acidity_content=
+  as.factor(cut(as.numeric(red_wine$volatile.acidity),
+c(0,7.1,9.2,16),labels = c('low','average','high')))
+red_wine$fixed.acidity_content=as.factor(red_wine$fixed.acidity_content)
+
+```
+
+```{r echo=FALSE}
+multi.hist(select(red_wine,
+          c(chlorides,free.sulfur.dioxide,total.sulfur.dioxide,sulphates)))
+```
+```{r echo=FALSE}
+summary(select(red_wine,
+            c(chlorides,free.sulfur.dioxide,total.sulfur.dioxide,sulphates)))
+```
+sulphur is comparitively higher when considering only numerical value let's 
+plot this on logarithmic scale. 
+
+```{r echo=FALSE}
+red_wine$free.sulfur.dioxide_content=
+  as.factor(cut(as.numeric(red_wine$free.sulfur.dioxide),
+c(0,7,21,73),labels = c('low','average','high')))
+red_wine$free.sulfur.dioxide_content=
+  as.factor(red_wine$free.sulfur.dioxide_content)
+
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x=total.sulfur.dioxide),data = red_wine)+
+  geom_histogram(binwidth=.1)+
+  scale_x_log10()
+```
+total.sulfur.dioxide distribution seemed to be right skewed is actually 
+normally when viewed in logarithmic scale.
+
+distribution of chlorides was not clear so let's plot it with reduced scale.
+```{r echo=FALSE, message=FALSE, warning=FALSE }
+ggplot(aes(x=chlorides),data = red_wine)+
+  geom_histogram()+
+  coord_cartesian(xlim = c(0,.7))+
+  scale_x_continuous(breaks = seq(0,.7,.05))
+```
+
+
+```{r echo=FALSE}
+multi.hist(select(red_wine,c(pH,alcohol)))
+```
+```{r echo=FALSE}
+summary(select(red_wine,
+            c(pH,alcohol)))
+```
+
+Almost all of our feature variabls area nearly normally distributed. 
+citric acid has bimodal distribution.
+
+```{r echo=FALSE}
+ggplot(aes(x=citric.acid,fill=quality_text),data = red_wine)+
+  geom_density(alpha=.3)
+```
+```{r echo=FALSE}
+red_wine$alcohol_content=as.factor(cut(as.numeric(red_wine$alcohol),
+c(0,9.5,11.1,15),labels = c('low','average','high')))
+red_wine$alcohol_content=as.factor(red_wine$alcohol_content)
+
+```
+
+# Univariate Analysis
+
+
+
+### What is the structure of your dataset?
+There are 1599 red wine in this data set with 12 features 
+(fixed.acidity, volatile.acidity, citric.acid, residual.sugar, chlorides, 
+free.sulfur.dioxide, total.sulfur.dioxide, density,pH,sulphates,alcohol,quality)
+Most of Features are normally distributed. Except Sulfur.dioxide
+(both Free and Total) and alcohol other features are narrowly distributed.
+
+### What is/are the main feature(s) of interest in your dataset?
+Quality has high corelation with alcohol and fixed acidity. these are main 
+feature of interest. 
+
+
+### What other features in the dataset do you think will help support your \
+investigation into your feature(s) of interest?
+
+i would also like to explore relationship with citric acid
+and sulphur content.i would like to explore features with correlation greater 
+than .2 in magnitude.
+
+### Did you create any new variables from existing variables in the dataset?
+
+yes i have converted some features into catogorical with mainly three catogories
+low,average and high. Since our dataset in not big it will help in highlighting 
+main distinguishing features.
+
+### Of the features you investigated, were there any unusual distributions? 
+
+No, most features follow normal distribution but there are some outliers in
+some distributions like in sulphur dioxide.
+
+
+
+# Bivariate Plots Section
+
+
+
+
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=pH,y=fixed.acidity))+
+  geom_point()+
+  geom_smooth(method = 'lm')
+
+```
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=density,y=fixed.acidity))+
+  geom_point()+
+  geom_smooth(method = 'lm')
+
+```
+
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=citric.acid,y=fixed.acidity))+
+  geom_point()+
+  geom_smooth(method = 'lm')
+
+```
+
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=citric.acid,y=volatile.acidity))+
+  geom_point()+
+  geom_smooth(method = 'lm')
+
+```
+
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=density,y=alcohol))+
+  geom_point()+
+  geom_smooth(method = 'lm')
+
+```
+
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=free.sulfur.dioxide,y=total.sulfur.dioxide))+
+  geom_point()+
+  geom_smooth(method = 'lm')
+
+```
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=volatile.acidity,y=pH))+
+  geom_point()+
+  geom_smooth(method = 'lm')
+
+```
+
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=quality_text,y=volatile.acidity))+
+  geom_boxplot()
+
+```
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=quality_text,y=alcohol))+
+  geom_boxplot()
+
+```
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=quality_text,y=citric.acid))+
+  geom_boxplot()+
+  geom_smooth(method = 'lm')+
+  coord_cartesian(ylim = c(0,.75))
+
+```
+
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=quality_text,y=sulphates))+
+  geom_boxplot()+
+  geom_smooth(method = 'lm')+
+  coord_cartesian(ylim = c(0.25,1))
+
+```
+
+
+
+# Bivariate Analysis
+
+> **Tip**: As before, summarize what you found in your bivariate explorations
+here. Use the questions below to guide your discussion.
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. How did the feature(s) of interest vary with other features in \
+the dataset?
+
+Quality is positively associated with Sulphates,citric acid and alcohol content.
+Quality is negatively associated with volatile acidity.
+fixed acidity is highly corelated with ph,citric acid and density.
+
+### Did you observe any interesting relationships between the other features \
+(not the main feature(s) of interest)?
+
+There is positive corelation between volatile acidity and pH which is pretty
+surprising.one speculation is that because volatile acidity is negatively 
+corelated with citric acid so increases in volatile acidity makes solution less
+acidic.
+
+### What was the strongest relationship you found?
+Posotive-
+citric acid and fixed acidity
+density and fixed acidity
+quality and alcohol
+Negative-
+ph and fixed acidity
+citric acid and volatile acidity
+alcohol and density
+quality and volatile acidity
+
+# Multivariate Plots Section
+
+> **Tip**: Now it's time to put everything together. Based on what you found in
+the bivariate plots section, create a few multivariate plots to investigate
+more complex interactions between variables. Make sure that the plots that you
+create here are justified by the plots you explored in the previous section. If
+you plan on creating any mathematical models, this is the section where you
+will do that.
+
+```{r echo=FALSE, Multivariate_Plots}
+
+```
+
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=alcohol,y=density))+
+  geom_point(aes(color=quality_text))
+
+```
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=volatile.acidity,y=citric.acid))+
+  geom_point(aes(color=quality_text))
+
+```
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=pH,y=citric.acid))+
+  geom_point(aes(color=quality_text),alpha=.4)
+
+```
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=alcohol_content,y=volatile.acidity))+
+  geom_point(aes(color=quality_text),alpha=.3)+
+  facet_grid(~quality_text)
+
+```
+
+
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=pH,y=citric.acid))+
+  geom_bin2d(aes(fill=quality_text))+
+  facet_grid(~residual.sugar_content)
+
+```
+
+```{r echo=FALSE}
+ggplot(data = red_wine,aes(x=fixed.acidity,y=density))+
+  geom_point(aes(color=quality_text))+
+  facet_wrap(~alcohol_content)
+
+```
+
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. Were there features that strengthened each other in terms of \
+looking at your feature(s) of interest?
+Low volatile and high citric acid is recipe for good wine.
+
+### Were there any interesting or surprising interactions between features?
+No
+------
+
+# Final Plots and Summary
+
+
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+ggplot(aes(x=alcohol),data = red_wine)+
+  ggtitle('Quality dependence on Alcohol content')+
+ geom_density(aes(color=quality_text,fill=quality_text,alpha=.01))+
+  scale_x_continuous(name = 'Alcohol content in wine',breaks = seq(8,16,.5))+
+  scale_y_continuous(name = 'Density')
+```
+
+### Description One
+Quality is most corelated with alcohol content.we can clearly see that good 
+quality wines has significantly higher amount of alcohol present
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+ggplot(data = red_wine,aes(x=quality_text,y=volatile.acidity))+
+  geom_boxplot()+
+  ggtitle('Quality dependence on Volatile acidity')+
+  scale_x_discrete(name = 'Quality of Wine')+
+  scale_y_continuous(name = 'Volatile Acidity',breaks = seq(0,1.6,.2))
+```
+
+### Description Two
+volatile acidity which at too high of levels can lead to an unpleasant, vinegar
+taste is clearly validated through this graph.
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+ggplot(data = red_wine,aes(x=volatile.acidity,y=citric.acid))+
+  geom_point(aes(color=quality_text))+
+  ggtitle('Quality dependence on Volatile acidity and citric acid')+
+  scale_x_continuous(breaks = seq(0,1.6,.2), name = 'Volatile Acidity')+
+  scale_y_continuous(name = 'Citric Acid Content',breaks = seq(0,1,.1))
+```
+
+### Description Three
+Low volatile and high citric acid is recipe for good wine.
+------
+
+# Reflection
+
+Our data set contains 1,599 red wines with 11 variables on the chemical 
+properties of the wine.
+Our Dataset had no missing values. we have six quality classes. About 82% wines
+were of quality 5,6.so when plotting it was diffucult to see other quality
+representation by different features. so i decided to group quality into 3
+classes bad,average and good. these changes helped in visualizing more clearly.
+
+Based on our intution we checked dependencies of quality on different features.
+most of the features were normally distributed except citric acid which had 
+bimodal distribution but on logarithmic scale it was also near normal 
+distribution.Based on corelation about half of the feature seem to be 
+positively associated and other half negatively.
+
+based on our intution we checked quality dependence on different features.
+we confirmed that the amount of acetic acid in wine, which at too high of levels
+can lead to an unpleasant, vinegar taste. wines are acidic in nature. 
+Quality is most corelated with alcohol content.we can clearly see that good 
+quality wines has significantly higher amount of alcohol present
+Low volatile and high citric acid is recipe for good wine.
+
+
+
+
+
